@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🚀 Coordinate Quest: Textbook Edition 🚀</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #6c5ce7; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 10px; }
+        #quiz-card { background: white; width: 100%; max-width: 650px; padding: 25px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 4px solid #a29bfe; }
+        .point-box { font-size: 32px; font-weight: 900; color: #6c5ce7; margin: 15px 0; background: #f1f2f6; padding: 15px; border-radius: 12px; }
+        .instruction { font-size: 19px; font-weight: 600; margin-bottom: 20px; color: #2d3436; min-height: 60px; line-height: 1.5; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .choice-btn { padding: 14px; font-size: 17px; font-weight: bold; cursor: pointer; border: none; background: #fab1a0; border-radius: 10px; box-shadow: 0 4px 0 #e17055; transition: 0.2s; color: #2d3436; }
+        .choice-btn:hover:not(:disabled) { background: #ff7675; }
+        .choice-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        #feedback { margin-top: 15px; font-size: 16px; min-height: 130px; text-align: left; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dfe6e9; }
+        .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        th, td { border: 1px solid #dfe6e9; padding: 8px; text-align: center; }
+        th { background: #eee; }
+        .hint-list { margin: 8px 0 0 18px; padding: 0; color: #444; }
+        #next-btn { margin-top: 15px; padding: 12px 30px; background: #6c5ce7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: block; margin-left: auto; margin-right: auto; box-shadow: 0 4px 0 #4834d4; }
+        #reload-btn { margin-top: 25px; padding: 12px 25px; cursor: pointer; background: #00b894; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; }
+        
+        /* New Quote Styling */
+        .quote-container { margin-top: 25px; padding: 20px; background: #f0f3ff; border-radius: 15px; border-left: 8px solid #6c5ce7; }
+        #quote-display { font-size: 22px; font-weight: 700; color: #2d3436; line-height: 1.4; margin-bottom: 10px; }
+        #author-display { font-size: 16px; color: #6c5ce7; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="quiz-card">
+    <div id="game-area">
+        <div id="progress" style="font-weight:bold; color:#636e72; margin-bottom:10px;">Question 1 of 10</div>
+        <div id="point-display" class="point-box">📍 A(x, y)</div>
+        <div id="instruction-text" class="instruction">Loading...</div>
+        <div id="choices-area" class="options-grid"></div>
+        
+        <div id="feedback">
+            <div id="feedback-text">Select the correct coordinates:</div>
+            <button id="next-btn" class="hidden" onclick="goToNext()">Next Question ➡️</button>
+        </div>
+    </div>
+
+    <div id="result-area" class="hidden">
+        <h1>🏁 Quiz Results 🏁</h1>
+        <div id="final-score" style="font-size: 36px; font-weight: 900; color: #6c5ce7;"></div>
+        
+        <div class="quote-container">
+            <div id="quote-display"></div>
+            <div id="author-display"></div>
+        </div>
+
+        <div id="table-container"></div>
+        <button id="reload-btn" onclick="location.reload()">Restart Quiz 🔄</button>
+    </div>
+</div>
+
+<script>
+    let currentQ = 0;
+    let score = 0;
+    let questions = [];
+    let userLog = [];
+
+    const quoteData = {
+        tier1: [ // 0-2
+            { q: "“Mistakes are proof that you are trying. Keep going!” 🪵", a: "Unknown" },
+            { q: "“I have not failed. I've just found 10,000 ways that won't work.” 💡", a: "Thomas Edison" },
+            { q: "“Every professional was once an amateur. Practice is the key!” 🔑", a: "Unknown" }
+        ],
+        tier2: [ // 3-5
+            { q: "“It does not matter how slowly you go as long as you do not stop.” 🐢", a: "Confucius" },
+            { q: "“Success is the sum of small efforts, repeated day in and day out.” 📈", a: "Robert Collier" },
+            { q: "“Don't wish it were easier, wish you were better.” 💪", a: "Jim Rohn" }
+        ],
+        tier3: [ // 6-8
+            { q: "“The only way to learn mathematics is to do mathematics.” 🔢", a: "Paul Halmos" },
+            { q: "“Strive for progress, not perfection.” ✨", a: "Unknown" },
+            { q: "“Intelligence is the ability to adapt to change.” 🧠", a: "Stephen Hawking" }
+        ],
+        tier4: [ // 9
+            { q: "“You are so close to mastery! Excellence is within your reach.” 🎯", a: "Unknown" },
+            { q: "“Success is not final, failure is not fatal: it is the courage to continue that counts.” 🦁", a: "Winston Churchill" },
+            { q: "“Great things are done by a series of small things brought together.” 🧱", a: "Vincent Van Gogh" }
+        ],
+        tier5: [ // 10
+            { q: "“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” 🏆", a: "Aristotle" },
+            { q: "“Pure mathematics is, in its way, the poetry of logical ideas.” 🎨", a: "Albert Einstein" },
+            { q: "“The man who has moved a mountain began by carrying away small stones.” ⛰️", a: "Chinese Proverb" }
+        ]
+    };
+
+    function generateQuiz() {
+        const types = ['refl_x', 'refl_y', 'rot90cw', 'rot90ccw', 'rot180', 'rot270cw', 'rot270ccw', 'trans_r', 'trans_l', 'trans_u'];
+        const labels = ['A', 'B', 'C', 'D', 'P', 'Q', 'R', 'S', 'K', 'L'];
+        return types.map((type, i) => {
+            const x = (Math.floor(Math.random() * 7) + 2) * (Math.random() > 0.5 ? 1 : -1);
+            const y = (Math.floor(Math.random() * 7) + 2) * (Math.random() > 0.5 ? 1 : -1);
+            const label = labels[i];
+            let ansX, ansY, task, hints = [];
+
+            if (type === 'refl_x') {
+                task = `${label}(${x}, ${y}) is reflected about the x-axis to ${label}'.`;
+                ansX = x; ansY = -y;
+                hints = ["Keep the x-coordinate the same.", "Change the sign of the y-coordinate."];
+            } else if (type === 'refl_y') {
+                task = `${label}(${x}, ${y}) is reflected about the y-axis to ${label}'.`;
+                ansX = -x; ansY = y;
+                hints = ["Keep the y-coordinate the same.", "Change the sign of the x-coordinate."];
+            } else if (type === 'rot90cw') {
+                task = `${label}(${x}, ${y}) is rotated clockwise about the origin through 90 degrees to ${label}'.`;
+                ansX = y; ansY = -x;
+                hints = ["Swap x and y.", "Change the sign of the new y-coordinate."];
+            } else if (type === 'rot90ccw') {
+                task = `${label}(${x}, ${y}) is rotated anticlockwise about the origin through 90 degrees to ${label}'.`;
+                ansX = -y; ansY = x;
+                hints = ["Swap x and y.", "Change the sign of the new x-coordinate."];
+            } else if (type === 'rot180') {
+                task = `${label}(${x}, ${y}) is rotated about the origin through 180 degrees to ${label}'.`;
+                ansX = -x; ansY = -y;
+                hints = ["Do not swap values.", "Change the signs of both coordinates."];
+            } else if (type === 'rot270cw') {
+                task = `${label}(${x}, ${y}) is rotated clockwise about the origin through 270 degrees to ${label}'.`;
+                ansX = -y; ansY = x;
+                hints = ["Note: 270° clockwise is same as 90° anticlockwise.", "Swap x and y, change sign of new x."];
+            } else if (type === 'rot270ccw') {
+                task = `${label}(${x}, ${y}) is rotated anticlockwise about the origin through 270 degrees to ${label}'.`;
+                ansX = y; ansY = -x;
+                hints = ["Note: 270° anticlockwise is same as 90° clockwise.", "Swap x and y, change sign of new y."];
+            } else {
+                const d = 5;
+                task = `${label}(${x}, ${y}) is translated right by ${d} units to ${label}'.`;
+                ansX = x + d; ansY = y;
+                hints = ["Only the x-coordinate changes.", `Add ${d} to the x-value.`];
+            }
+
+            const correct = `(${ansX}, ${ansY})`;
+            const distractors = [`(${-x}, ${y})`, `(${x}, ${-y})`, `(${-x}, ${-y})`, `(${y}, ${x})`, `(${-y}, ${x})`, `(${y}, ${-x})`].filter(d => d !== `(${x}, ${y})` && d !== correct);
+            let finalChoices = [correct];
+            for(let j=0; j<3; j++) finalChoices.push(distractors[j]);
+
+            return { display: `${label}(${x}, ${y})`, task, correct, hints, choices: finalChoices.sort(() => Math.random() - 0.5) };
+        }).sort(() => Math.random() - 0.5);
+    }
+
+    function showQuestion() {
+        const q = questions[currentQ];
+        document.getElementById('progress').innerText = `Question ${currentQ + 1} of 10`;
+        document.getElementById('point-display').innerText = `📍 ${q.display}`;
+        document.getElementById('instruction-text').innerText = q.task;
+        document.getElementById('feedback-text').innerHTML = "Select the correct image coordinates:";
+        document.getElementById('next-btn').classList.add('hidden');
+        
+        const area = document.getElementById('choices-area');
+        area.innerHTML = "";
+        q.choices.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = c;
+            btn.onclick = () => handleSelection(c);
+            area.appendChild(btn);
+        });
+    }
+
+    function handleSelection(selected) {
+        const q = questions[currentQ];
+        const isCorrect = (selected === q.correct);
+        document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+
+        if (isCorrect) {
+            score++;
+            document.getElementById('feedback-text').innerHTML = "<b style='color:green'>✅ Correct! Moving to next question...</b>";
+            setTimeout(goToNext, 1200);
+        } else {
+            let h = `<b style='color:red'>❌ Incorrect. Image is ${q.correct}.</b><ul class='hint-list'>`;
+            q.hints.forEach(hint => h += `<li>${hint}</li>`);
+            document.getElementById('feedback-text').innerHTML = h + "</ul>";
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+        userLog.push({ q: q.task, user: selected, model: q.correct, status: isCorrect ? "✅" : "❌" });
+    }
+
+    function goToNext() {
+        currentQ++;
+        if (currentQ < 10) showQuestion();
+        else finishGame();
+    }
+
+    function finishGame() {
+        document.getElementById('game-area').classList.add('hidden');
+        document.getElementById('result-area').classList.remove('hidden');
+        document.getElementById('final-score').innerText = `${score} / 10`;
+        
+        let pool;
+        if (score <= 2) pool = quoteData.tier1;
+        else if (score <= 5) pool = quoteData.tier2;
+        else if (score <= 8) pool = quoteData.tier3;
+        else if (score === 9) pool = quoteData.tier4;
+        else pool = quoteData.tier5;
+
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        document.getElementById('quote-display').innerText = pick.q;
+        document.getElementById('author-display').innerText = "— " + pick.a;
+
+        let tableHTML = `<table><tr><th>Question</th><th>Result</th><th>Answer</th></tr>`;
+        userLog.forEach(i => tableHTML += `<tr><td style='text-align:left'>${i.q}</td><td>${i.status}</td><td>${i.model}</td></tr>`);
+        document.getElementById('table-container').innerHTML = tableHTML + `</table>`;
+    }
+
+    questions = generateQuiz();
+    showQuestion();
+</script>
+</body>
+</html>
